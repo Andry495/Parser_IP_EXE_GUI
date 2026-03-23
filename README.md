@@ -5,182 +5,73 @@
 [![License](https://img.shields.io/github/license/Andry495/Parser_IP_EXE_GUI)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Andry495/Parser_IP_EXE_GUI?sort=semver)](https://github.com/Andry495/Parser_IP_EXE_GUI/releases)
 
-**Parser_IP_EXE_GUI** — настольное приложение для **Windows x64** на **C# / WinForms**: просмотр **сокетов выбранного процесса** (**TCP и UDP**, **IPv4 и IPv6**), **текстовый дамп** и **запуск `.exe`** с автологированием. Данные берутся из таблиц Windows (**iphlpapi**) с привязкой к **PID**.
+## О проекте
 
-Идея перекликается с утилитой на Python [Parser_IP_EXE](https://github.com/mazixs/Parser_IP_EXE); эта репозиторий — **отдельная реализация** с GUI под .NET **без NuGet** для сетевого слоя.
+**Parser IP — GUI** — утилита для **Windows x64**, которая показывает, **какие сетевые сокеты** использует выбранный **процесс**: протоколы **TCP и UDP**, адреса **IPv4 и IPv6**. Данные берутся из стандартных таблиц Windows (**iphlpapi**) с привязкой к **PID** — без установки драйверов и без сторонних сетевых библиотек.
 
-**Репозиторий:** [github.com/Andry495/Parser_IP_EXE_GUI](https://github.com/Andry495/Parser_IP_EXE_GUI)
+Дополнительно можно **писать снимки в текстовый лог** и **запустить свой `.exe`** из программы, чтобы сразу вести дамп по PID этого процесса.
 
----
-
-## Содержание
-
-| Документ | Назначение |
-|----------|------------|
-| **README.md** (этот файл) | Обзор, установка, использование, формат дампа, сборка |
-| [**CHANGELOG.md**](CHANGELOG.md) | История версий |
-| [**CONTRIBUTING.md**](CONTRIBUTING.md) | Участие в разработке |
-| [**LICENSE**](LICENSE) | Лицензия MIT |
-| [**docs/RELEASING.md**](docs/RELEASING.md) | Как собрать ZIP и опубликовать **Release** на GitHub |
-| [**docs/GITHUB_SYNC.md**](docs/GITHUB_SYNC.md) | **Push на GitHub**, SSH, исправление `gh auth` |
-
-**Текущая версия:** **1.0.0** (см. `ParserIpExeMonitor.csproj`, тег `v1.0.0`).
-
----
-
-## Релизы на GitHub
-
-1. Откройте [**Releases**](https://github.com/Andry495/Parser_IP_EXE_GUI/releases).
-2. Скачайте архив (**Assets**):
-   - **framework-dependent** — один `ParserIpExeMonitor.exe`, на ПК нужен [.NET 8 Desktop Runtime (win-x64)](https://dotnet.microsoft.com/download/dotnet/8.0).
-   - **self-contained** — один `ParserIpExeMonitor.exe` с runtime (файл больше по размеру).
-
-Если готовых архивов нет, соберите их локально: [**docs/RELEASING.md**](docs/RELEASING.md) или скрипт `scripts/publish-release.ps1`.
+**Версия:** 1.0.0 · **Репозиторий:** [github.com/Andry495/Parser_IP_EXE_GUI](https://github.com/Andry495/Parser_IP_EXE_GUI)
 
 ---
 
 ## Возможности
 
-| Функция | Описание |
-|--------|-----------|
-| **Процессы** | Список процессов Windows, **поиск по имени**, обновление списка. |
-| **Сокеты** | **TCP + UDP**, **IPv4 + IPv6**: протокол, локальный/удалённый endpoint, состояние; обновление **~каждые 2 с**. |
-| **Дамп** | Текстовый файл **UTF-8**: снимки, `Proto` / `Local` / `Remote`, **`UNIQUE_IP`**, **`UNIQUE_UDP_BIND`**. |
-| **Запуск .exe** | Путь, аргументы, **«Запустить и дампить»** — лог по PID дочернего процесса. |
-| **UI** | Тёмная тема, карточки, строка состояния. |
+- список процессов с **поиском по имени**;
+- таблица сокетов выбранного процесса (**TCP / UDP**, **IPv4 / IPv6**), обновление примерно **каждые 2 секунды**;
+- **дамп в файл** (UTF-8): снимки строк, отметка новых записей, строки `UNIQUE_IP` и `UNIQUE_UDP_BIND` где применимо;
+- **запуск внешнего приложения** с аргументами и автоматическим логированием сокетов дочернего PID;
+- интерфейс в **тёмной теме** (карточки, статус-строка).
 
 ---
 
-## Ограничения
+## Системные требования
 
-- Только сокеты **TCP/UDP**, видимые в **расширенных таблицах** Windows с **PID**. Не отображаются ICMP и прочий трафик без сокетов.
-- Для **UDP** в таблице в основном **локальные привязки**; «откуда шлют UDP» в этом API **не показывается**.
-- Не сниффер и не прокси — только то, что отдаёт **iphlpapi**.
-- **Домены, пинг, Keenetic** из Python-версии **не реализованы**.
+| Вариант | Что нужно на компьютере |
+|--------|-------------------------|
+| Сборка из исходников | Windows 10/11 x64, [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) и/или Visual Studio 2022+ (рабочая нагрузка «Разработка классических приложений .NET») |
+| Готовый **framework-dependent** `.exe` | [.NET 8 Desktop Runtime (win-x64)](https://dotnet.microsoft.com/download/dotnet/8.0) |
+| Готовый **self-contained** `.exe` | только Windows x64 (runtime встроен в файл, он больше по размеру) |
 
-Подробнее: разделы ниже и [CHANGELOG.md](CHANGELOG.md).
-
----
-
-## Требования
-
-| Сценарий | Нужно |
-|----------|--------|
-| **Разработка** | Windows 10/11 x64, [SDK .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0) и/или VS 2022+ (рабочая нагрузка «Классические приложения .NET») |
-| **Запуск FDD-сборки** | [.NET 8 Desktop Runtime win-x64](https://dotnet.microsoft.com/download/dotnet/8.0) |
-| **Запуск self-contained** | Только Windows x64 |
+При **пустой или неполной** таблице сокетов имеет смысл запустить программу **от имени администратора**.
 
 ---
 
-## Быстрый старт (из исходников)
+## Скачать
 
-```powershell
-git clone https://github.com/Andry495/Parser_IP_EXE_GUI.git
-cd Parser_IP_EXE_GUI
-dotnet run --project ParserIpExeMonitor\ParserIpExeMonitor.csproj
-```
+1. Откройте [**Releases**](https://github.com/Andry495/Parser_IP_EXE_GUI/releases).
+2. В разделе **Assets** выберите архив:
+   - **framework-dependent** — один `ParserIpExeMonitor.exe` (нужен .NET 8 Desktop на ПК);
+   - **self-contained** — один крупный `.exe` без установки .NET.
 
-Или откройте **`Parser_IP_EXE.sln`** в Visual Studio → **F5**.
-
----
-
-## Использование
-
-1. Выберите процесс (поле **«Поиск по имени…»** при необходимости).
-2. В таблице смотрите **сокеты** выбранного PID.
-3. **«Начать дамп»** — укажите `.log`/`.txt`; **«Стоп»** — закрыть файл.
-4. **«Запустить и дампить»** — `.exe` + аргументы, затем файл лога.
-
-При пустом или неполном списке попробуйте запуск **от имени администратора**.
+Собрать архивы у себя: скрипт `scripts/publish-release.ps1` или инструкция в [**docs/RELEASING.md**](docs/RELEASING.md).
 
 ---
 
-## Формат дампа
+## Как пользоваться
 
-Файл — **текст UTF-8**, поля в строках снимка разделены **табуляцией**.
+1. Выберите процесс в списке (при необходимости отфильтруйте **поиском по имени**).
+2. Ниже отобразятся **сокеты** этого PID.
+3. **«Начать дамп»** — укажите файл `.log` или `.txt`; **«Стоп»** — завершить запись.
+4. **«Запустить и дампить»** — укажите путь к `.exe` и при необходимости аргументы, затем файл лога.
 
-- Заголовки сессии: `=== Dump started ... ===`, `=== Dump stopped ... ===`
-- Блоки: `--- Snapshot ... | rows: N ---`
-- Строка записи: `timestamp`, `PID=`, `Proto=TCP|UDP`, `Local=`, `Remote=` (для UDP часто `—`), `State=`, `New=0|1`
-- Дополнительно для новых ключей: `UNIQUE_IP`, `UNIQUE_UDP_BIND`
-
-Примеры см. в этом README (ниже в исторических версиях документации) или в коде `Form1.WriteDumpSnapshot`.
+Для **UDP** в системной таблице обычно видна **локальная привязка**; колонка удалённой стороны может быть **«—»**. Это ограничение источника данных, не ошибка программы.
 
 ---
 
-## Сборка
+## Формат файла дампа
 
-```powershell
-dotnet build Parser_IP_EXE.sln -c Release
-```
+Текст **UTF-8**, в строках снимка поля разделены **табуляцией**.
 
-## Публикация одним `.exe`
+| Элемент | Назначение |
+|---------|------------|
+| `=== Dump started / stopped ===` | начало и конец сессии |
+| `--- Snapshot ... \| rows: N ---` | блок одного снимка |
+| поля `PID=`, `Proto=`, `Local=`, `Remote=`, `State=`, `New=` | одна строка таблицы на момент снимка |
+| `UNIQUE_IP` | новый удалённый IP (для подходящих TCP-записей) |
+| `UNIQUE_UDP_BIND` | новая локальная UDP-привязка |
 
-```powershell
-# Нужен установленный .NET 8 на целевом ПК
-dotnet publish ParserIpExeMonitor\ParserIpExeMonitor.csproj -c Release -r win-x64 --self-contained false
-
-# Без установки .NET (крупнее)
-dotnet publish ParserIpExeMonitor\ParserIpExeMonitor.csproj -c Release -r win-x64 --self-contained true -p:EnableCompressionInSingleFile=true
-```
-
-Выход: `ParserIpExeMonitor\bin\Release\net8.0-windows\win-x64\publish\`
-
-В Visual Studio: **ПКМ по проекту → Publish** → профили в `Properties\PublishProfiles\`.
-
----
-
-## Структура репозитория
-
-```
-Parser_IP_EXE/
-├── LICENSE
-├── CHANGELOG.md
-├── CONTRIBUTING.md
-├── README.md
-├── Parser_IP_EXE.sln
-├── scripts/
-│   ├── publish-release.ps1      # ZIP в artifacts/ (см. docs/RELEASING.md)
-│   └── git-sync.ps1             # pull --rebase + push main (без commit)
-├── docs/
-│   ├── RELEASING.md
-│   └── GITHUB_SYNC.md
-└── ParserIpExeMonitor/
-    ├── Program.cs
-    ├── Form1.cs / Form1.Designer.cs
-    ├── AppTheme.cs / CardPanel.cs
-    ├── TcpTableProvider.cs / UdpTableProvider.cs
-    ├── NetTableReader.cs / NetConnectionInfo.cs
-    ├── ParserIpExeMonitor.csproj
-    └── Properties/PublishProfiles/
-```
-
----
-
-## Git и SSH (Windows)
-
-Если `git push` по SSH падает с `Permission denied`, а `ssh -T git@github.com` работает:
-
-```powershell
-git config --global core.sshCommand "C:/Windows/System32/OpenSSH/ssh.exe -i C:/Users/ВАШ/.ssh/id_ed25519_github -o IdentitiesOnly=yes"
-```
-
----
-
-## Связь с Python-версией
-
-[Parser_IP_EXE](https://github.com/mazixs/Parser_IP_EXE) (Python, GPL-3.0) — конфиг, пинг, домены, Keenetic.  
-Данный проект — **самостоятельный** C# GUI; лицензия **MIT** ([LICENSE](LICENSE)).
-
----
-
-## Лицензия
-
-**MIT** — см. [LICENSE](LICENSE).
-
----
-
-## Пример строк дампа
+**Пример:**
 
 ```text
 === Dump started 2026-03-23 14:30:00 ===
@@ -192,3 +83,68 @@ UNIQUE_IP	93.184.216.34
 UNIQUE_UDP_BIND	0.0.0.0:5353
 === Dump stopped 2026-03-23 14:35:00 ===
 ```
+
+---
+
+## Ограничения
+
+Отображается только то, что отдаёт **Windows** для **TCP/UDP** с указанием **PID**. **Не** является сниффером пакетов и **не** показывает весь сетевой стек целиком (например, **ICMP** без сокетов сюда не попадает). Функции вроде **пинга, резолва доменов, команд для Keenetic** из других проектов с похожей идеей **здесь нет** — только монитор сокетов и текстовый дамп.
+
+---
+
+## Сборка из исходников
+
+```powershell
+git clone https://github.com/Andry495/Parser_IP_EXE_GUI.git
+cd Parser_IP_EXE_GUI
+dotnet run --project ParserIpExeMonitor\ParserIpExeMonitor.csproj
+```
+
+Или откройте **`Parser_IP_EXE.sln`** в Visual Studio и нажмите **F5**.
+
+**Release-сборка:**
+
+```powershell
+dotnet build Parser_IP_EXE.sln -c Release
+```
+
+**Один файл `.exe` для распространения** (`Publish`):
+
+```powershell
+dotnet publish ParserIpExeMonitor\ParserIpExeMonitor.csproj -c Release -r win-x64 --self-contained false
+dotnet publish ParserIpExeMonitor\ParserIpExeMonitor.csproj -c Release -r win-x64 --self-contained true -p:EnableCompressionInSingleFile=true
+```
+
+Готовый файл: `ParserIpExeMonitor\bin\Release\net8.0-windows\win-x64\publish\ParserIpExeMonitor.exe`  
+В Visual Studio: **ПКМ по проекту → Publish** — профили в `ParserIpExeMonitor\Properties\PublishProfiles\`.
+
+---
+
+## Структура репозитория (кратко)
+
+```
+Parser_IP_EXE.sln          — решение Visual Studio
+ParserIpExeMonitor/        — исходники приложения (WinForms, WinAPI iphlpapi)
+LICENSE, CHANGELOG.md      — лицензия MIT и история версий
+docs/                      — релизы, синхронизация с Git (для мейнтейнеров)
+scripts/                   — publish-release.ps1, git-sync.ps1
+```
+
+---
+
+## Прочая документация
+
+| Файл | Для кого |
+|------|----------|
+| [CHANGELOG.md](CHANGELOG.md) | список изменений по версиям |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | участие в разработке |
+| [docs/RELEASING.md](docs/RELEASING.md) | публикация релиза и артефактов |
+| [docs/GITHUB_SYNC.md](docs/GITHUB_SYNC.md) | работа с Git / SSH / `gh` (не относится к пользователям программы) |
+
+---
+
+## Лицензия
+
+Проект распространяется под лицензией **MIT** — см. файл [LICENSE](LICENSE).
+
+Похожий по смыслу инструмент на Python — [Parser_IP_EXE](https://github.com/mazixs/Parser_IP_EXE) (другой код, лицензия **GPL-3.0**). Этот репозиторий — **отдельная** реализация на C#.

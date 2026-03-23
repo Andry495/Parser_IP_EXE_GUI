@@ -22,6 +22,7 @@
 | [**CONTRIBUTING.md**](CONTRIBUTING.md) | Участие в разработке |
 | [**LICENSE**](LICENSE) | Лицензия MIT |
 | [**docs/RELEASING.md**](docs/RELEASING.md) | Как собрать ZIP и опубликовать **Release** на GitHub |
+| [**docs/GITHUB_SYNC.md**](docs/GITHUB_SYNC.md) | **Push на GitHub**, SSH, исправление `gh auth` |
 
 **Текущая версия:** **1.0.0** (см. `ParserIpExeMonitor.csproj`, тег `v1.0.0`).
 
@@ -139,9 +140,11 @@ Parser_IP_EXE/
 ├── README.md
 ├── Parser_IP_EXE.sln
 ├── scripts/
-│   └── publish-release.ps1      # ZIP в artifacts/ (см. docs/RELEASING.md)
+│   ├── publish-release.ps1      # ZIP в artifacts/ (см. docs/RELEASING.md)
+│   └── git-sync.ps1             # pull --rebase + push main (без commit)
 ├── docs/
-│   └── RELEASING.md
+│   ├── RELEASING.md
+│   └── GITHUB_SYNC.md
 └── ParserIpExeMonitor/
     ├── Program.cs
     ├── Form1.cs / Form1.Designer.cs

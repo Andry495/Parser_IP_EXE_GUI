@@ -1,0 +1,35 @@
+## Visual Studio / VS Code
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+## Build
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+
+## NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+
+## .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Others
+*.DotSettings.user
+*.rsuser
+Thumbs.db
+Desktop.ini

@@ -132,7 +132,7 @@ public partial class Form1 : Form
         };
         var subtitle = new Label
         {
-            Text = "TCP-соединения выбранного процесса · дамп уникальных IP · запуск процесса с автологом",
+            Text = "Сокеты выбранного процесса (TCP и UDP, IPv4/IPv6) · дамп · запуск .exe с автологом",
             Font = AppTheme.CaptionFont(),
             ForeColor = AppTheme.TextMuted,
             AutoSize = true,
@@ -275,7 +275,7 @@ public partial class Form1 : Form
         };
         head.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         head.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120f));
-        var connTitle = SectionTitle("Активные TCP-соединения");
+        var connTitle = SectionTitle("Сокеты процесса (TCP + UDP, IPv4/IPv6)");
         head.Controls.Add(connTitle, 0, 0);
         _connectionCountLabel.Text = "0 соединений";
         _connectionCountLabel.Font = AppTheme.CaptionFont();
@@ -299,6 +299,7 @@ public partial class Form1 : Form
         _connectionsGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         _connectionsGrid.RowHeadersVisible = false;
         _connectionsGrid.BorderStyle = BorderStyle.None;
+        _connectionsGrid.Columns.Add("Proto", "Протокол");
         _connectionsGrid.Columns.Add("Local", "Локальный адрес");
         _connectionsGrid.Columns.Add("Remote", "Удалённый адрес");
         _connectionsGrid.Columns.Add("State", "Состояние");
@@ -499,7 +500,7 @@ public partial class Form1 : Form
             _selectedProcessName = string.Empty;
             _statusMain.Text = "Процесс не выбран";
             _connectionsGrid.Rows.Clear();
-            _connectionCountLabel.Text = "0 соединений";
+            _connectionCountLabel.Text = "0 записей";
             return;
         }
 
@@ -516,23 +517,25 @@ public partial class Form1 : Form
             return;
         }
 
-        var list = TcpTableProvider.GetAllTcpConnections()
+        var list = NetTableReader.GetAll()
             .Where(c => c.ProcessId == _selectedPid)
-            .OrderBy(c => c.RemoteAddress)
-            .ThenBy(c => c.RemotePort)
+            .OrderBy(c => c.Protocol)
+            .ThenBy(c => c.RemoteDisplay)
+            .ThenBy(c => c.LocalEndpoint)
             .ToList();
 
         _connectionsGrid.Rows.Clear();
         foreach (var connection in list)
         {
             _connectionsGrid.Rows.Add(
-                $"{connection.LocalAddress}:{connection.LocalPort}",
-                $"{connection.RemoteAddress}:{connection.RemotePort}",
+                connection.Protocol,
+                connection.LocalEndpoint,
+                connection.RemoteDisplay,
                 connection.State);
         }
 
         var n = list.Count;
-        _connectionCountLabel.Text = n == 0 ? "Нет соединений" : $"Соединений: {n}";
+        _connectionCountLabel.Text = n == 0 ? "Нет сокетов" : $"Записей: {n}";
 
         if (_dumpWriter is not null)
         {
@@ -591,23 +594,27 @@ public partial class Form1 : Form
             : $"Выбрано: {_selectedProcessName} (PID {_selectedPid})";
     }
 
-    private void WriteDumpSnapshot(List<TcpConnectionInfo> list)
+    private void WriteDumpSnapshot(List<NetConnectionInfo> list)
     {
         if (_dumpWriter is null || _selectedPid is null)
         {
             return;
         }
 
-        _dumpWriter.WriteLine($"--- Snapshot {DateTime.Now:yyyy-MM-dd HH:mm:ss} | connections: {list.Count} ---");
+        _dumpWriter.WriteLine($"--- Snapshot {DateTime.Now:yyyy-MM-dd HH:mm:ss} | rows: {list.Count} ---");
         foreach (var connection in list)
         {
-            var key = $"{connection.RemoteAddress}:{connection.RemotePort}";
+            var key = connection.DumpRowKey();
             var isNew = _dumpedIps.Add(key);
             _dumpWriter.WriteLine(
-                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}\tPID={_selectedPid}\tRemote={key}\tState={connection.State}\tNew={(isNew ? 1 : 0)}");
+                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}\tPID={_selectedPid}\tProto={connection.Protocol}\tLocal={connection.LocalEndpoint}\tRemote={connection.RemoteDisplay}\tState={connection.State}\tNew={(isNew ? 1 : 0)}");
             if (isNew)
             {
-                _dumpWriter.WriteLine($"UNIQUE_IP\t{connection.RemoteAddress}");
+                var extra = connection.UniqueExtraLine();
+                if (extra is not null)
+                {
+                    _dumpWriter.WriteLine(extra);
+                }
             }
         }
 

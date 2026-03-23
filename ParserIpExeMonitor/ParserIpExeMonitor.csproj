@@ -6,6 +6,16 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>Parser IP — GUI</Product>
+    <Description>Monitor TCP/UDP sockets (IPv4/IPv6) of a Windows process; text dump; launch exe with logging.</Description>
+    <Authors>Andry495</Authors>
+    <Copyright>Copyright © 2026 Andry495</Copyright>
+    <RepositoryUrl>https://github.com/Andry495/Parser_IP_EXE_GUI</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Andry495/Parser_IP_EXE_GUI</PackageProjectUrl>
     <!-- Один .exe при dotnet publish (не влияет на обычный build) -->
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>

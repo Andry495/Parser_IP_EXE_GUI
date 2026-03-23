@@ -3,24 +3,24 @@ using System.Runtime.InteropServices;
 
 namespace ParserIpExeMonitor;
 
-internal static class TcpTableProvider
+internal static class UdpTableProvider
 {
     private const int AfInet = 2;
     private const int AfInet6 = 23;
     private const int ErrorInsufficientBuffer = 122;
 
-    public static IReadOnlyList<NetConnectionInfo> GetAllTcpConnections()
+    public static IReadOnlyList<NetConnectionInfo> GetAllUdpEndpoints()
     {
         var list = new List<NetConnectionInfo>(64);
-        list.AddRange(ReadTcpV4Table());
-        list.AddRange(ReadTcpV6Table());
+        list.AddRange(ReadUdpV4Table());
+        list.AddRange(ReadUdpV6Table());
         return list;
     }
 
-    private static List<NetConnectionInfo> ReadTcpV4Table()
+    private static List<NetConnectionInfo> ReadUdpV4Table()
     {
         var bufferSize = 0;
-        if (GetExtendedTcpTable(IntPtr.Zero, ref bufferSize, true, AfInet, TcpTableClass.TcpTableOwnerPidAll, 0) !=
+        if (GetExtendedUdpTable(IntPtr.Zero, ref bufferSize, true, AfInet, UdpTableClass.UdpTableOwnerPid, 0) !=
             ErrorInsufficientBuffer)
         {
             return [];
@@ -29,28 +29,28 @@ internal static class TcpTableProvider
         var buffer = Marshal.AllocHGlobal(bufferSize);
         try
         {
-            if (GetExtendedTcpTable(buffer, ref bufferSize, true, AfInet, TcpTableClass.TcpTableOwnerPidAll, 0) != 0)
+            if (GetExtendedUdpTable(buffer, ref bufferSize, true, AfInet, UdpTableClass.UdpTableOwnerPid, 0) != 0)
             {
                 return [];
             }
 
             var count = Marshal.ReadInt32(buffer);
             var rowPtr = IntPtr.Add(buffer, sizeof(int));
-            const int rowSize = 24;
+            const int rowSize = 12;
             var list = new List<NetConnectionInfo>(count);
 
             for (var i = 0; i < count; i++)
             {
-                var row = Marshal.PtrToStructure<MibTcpRowOwnerPid>(rowPtr);
+                var row = Marshal.PtrToStructure<MibUdpRowOwnerPid>(rowPtr);
                 list.Add(new NetConnectionInfo
                 {
-                    Protocol = "TCP",
+                    Protocol = "UDP",
                     ProcessId = (int)row.OwningPid,
                     LocalAddress = ParseIpV4(row.LocalAddr),
                     LocalPort = ParsePort(row.LocalPort),
-                    RemoteAddress = ParseIpV4(row.RemoteAddr),
-                    RemotePort = ParsePort(row.RemotePort),
-                    State = row.State.ToString()
+                    RemoteAddress = "*",
+                    RemotePort = 0,
+                    State = "UDP"
                 });
                 rowPtr = IntPtr.Add(rowPtr, rowSize);
             }
@@ -63,10 +63,10 @@ internal static class TcpTableProvider
         }
     }
 
-    private static List<NetConnectionInfo> ReadTcpV6Table()
+    private static List<NetConnectionInfo> ReadUdpV6Table()
     {
         var bufferSize = 0;
-        if (GetExtendedTcpTable(IntPtr.Zero, ref bufferSize, true, AfInet6, TcpTableClass.TcpTableOwnerPidAll, 0) !=
+        if (GetExtendedUdpTable(IntPtr.Zero, ref bufferSize, true, AfInet6, UdpTableClass.UdpTableOwnerPid, 0) !=
             ErrorInsufficientBuffer)
         {
             return [];
@@ -75,38 +75,33 @@ internal static class TcpTableProvider
         var buffer = Marshal.AllocHGlobal(bufferSize);
         try
         {
-            if (GetExtendedTcpTable(buffer, ref bufferSize, true, AfInet6, TcpTableClass.TcpTableOwnerPidAll, 0) != 0)
+            if (GetExtendedUdpTable(buffer, ref bufferSize, true, AfInet6, UdpTableClass.UdpTableOwnerPid, 0) != 0)
             {
                 return [];
             }
 
             var count = Marshal.ReadInt32(buffer);
             var rowPtr = IntPtr.Add(buffer, sizeof(int));
-            const int rowSize = 56;
+            const int rowSize = 28; // MIB_UDP6ROW_OWNER_PID
             var list = new List<NetConnectionInfo>(count);
             var localBytes = new byte[16];
-            var remoteBytes = new byte[16];
 
             for (var i = 0; i < count; i++)
             {
                 Marshal.Copy(rowPtr, localBytes, 0, 16);
                 var localScope = (uint)Marshal.ReadInt32(rowPtr, 16);
                 var localPort = ParsePort((uint)Marshal.ReadInt32(rowPtr, 20));
-                Marshal.Copy(IntPtr.Add(rowPtr, 24), remoteBytes, 0, 16);
-                var remoteScope = (uint)Marshal.ReadInt32(rowPtr, 40);
-                var remotePort = ParsePort((uint)Marshal.ReadInt32(rowPtr, 44));
-                var state = (MibTcpState)Marshal.ReadInt32(rowPtr, 48);
-                var pid = Marshal.ReadInt32(rowPtr, 52);
+                var pid = Marshal.ReadInt32(rowPtr, 24);
 
                 list.Add(new NetConnectionInfo
                 {
-                    Protocol = "TCP",
+                    Protocol = "UDP",
                     ProcessId = pid,
                     LocalAddress = FormatIPv6(localBytes, localScope),
                     LocalPort = localPort,
-                    RemoteAddress = FormatIPv6(remoteBytes, remoteScope),
-                    RemotePort = remotePort,
-                    State = state.ToString()
+                    RemoteAddress = "*",
+                    RemotePort = 0,
+                    State = "UDP"
                 });
                 rowPtr = IntPtr.Add(rowPtr, rowSize);
             }
@@ -154,48 +149,25 @@ internal static class TcpTableProvider
     }
 
     [DllImport("iphlpapi.dll", SetLastError = true)]
-    private static extern int GetExtendedTcpTable(
-        IntPtr pTcpTable,
+    private static extern int GetExtendedUdpTable(
+        IntPtr pUdpTable,
         ref int pdwSize,
         bool bOrder,
         int ulAf,
-        TcpTableClass tableClass,
+        UdpTableClass tableClass,
         uint reserved);
 
-    private enum TcpTableClass
+    private enum UdpTableClass
     {
-        TcpTableBasicListener,
-        TcpTableBasicConnections,
-        TcpTableBasicAll,
-        TcpTableOwnerPidListener,
-        TcpTableOwnerPidConnections,
-        TcpTableOwnerPidAll
-    }
-
-    private enum MibTcpState : uint
-    {
-        Closed = 1,
-        Listen = 2,
-        SynSent = 3,
-        SynRcvd = 4,
-        Established = 5,
-        FinWait1 = 6,
-        FinWait2 = 7,
-        CloseWait = 8,
-        Closing = 9,
-        LastAck = 10,
-        TimeWait = 11,
-        DeleteTcb = 12
+        UdpTableBasic,
+        UdpTableOwnerPid
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct MibTcpRowOwnerPid
+    private struct MibUdpRowOwnerPid
     {
-        public MibTcpState State;
         public uint LocalAddr;
         public uint LocalPort;
-        public uint RemoteAddr;
-        public uint RemotePort;
         public uint OwningPid;
     }
 }
